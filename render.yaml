@@ -1,0 +1,10 @@
+services:
+  
+- type: web
+  name: my-flask-site
+  env: python
+  buildCommand: ""
+  startCommand: gunicorn app:app
+  envVars:
+- key: PYTHON_VERSION
+    value: 3.10
