@@ -1,29 +1,46 @@
-from flask import Flask, render_template, request
-from openpyxl import load_workbook, Workbook
+from flask import Flask, render_template, request, redirect, flash
+import openpyxl
 import os
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key'
 
-excel_file = 'data.xlsx'
+EXCEL_FILE = 'data.xlsx'
 
-if not os.path.exists(excel_file):
-    wb = Workbook()
-    ws = wb.active
-    ws.append(['Name', 'Email'])  # Header row
-    wb.save(excel_file)
+def get_existing_data():
+    wb = openpyxl.load_workbook(EXCEL_FILE)
+    sheet = wb.active
+    data = []
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        if row[0]:  # name column
+            data.append({'name': row[0], 'email': row[1]})
+    return data
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def form():
-    wb = load_workbook(excel_file)
-    ws = wb.active
+    data = get_existing_data()
 
-    people = [
-        (row[0].value, row[1].value)
-        for row in ws.iter_rows(min_row=2, max_col=2)
-        if row[0].value and row[1].value
-    ]
+    if request.method == 'POST':
+        name = request.form['name'].strip()
+        email = request.form['email'].strip()
 
-    return render_template('form.html', people=people)
+        # Check if name already exists (case-insensitive)
+        if any(d['name'].lower() == name.lower() for d in data):
+            flash("This name already exists. Please enter a unique name.")
+            return redirect('/')
+
+        # Write to Excel
+        wb = openpyxl.load_workbook(EXCEL_FILE)
+        sheet = wb.active
+        next_row = sheet.max_row + 1
+        sheet.cell(row=next_row, column=1, value=name)
+        sheet.cell(row=next_row, column=2, value=email)
+        wb.save(EXCEL_FILE)
+
+        flash("Data saved successfully!")
+        return redirect('/')
+
+    return render_template('form.html', names=[d['name'] for d in data], emails=[d['email'] for d in data if d['email']])
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -40,10 +57,10 @@ def submit():
         return "Please select a person or enter a new name and email."
 
     # Save to Excel
-    wb = load_workbook(excel_file)
+    wb = openpyxl.load_workbook(EXCEL_FILE)
     ws = wb.active
     ws.append([name, email])
-    wb.save(excel_file)
+    wb.save(EXCEL_FILE)
 
     return f"Saved: {name} ({email})"
 

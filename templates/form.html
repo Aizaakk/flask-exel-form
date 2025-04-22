@@ -1,23 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Select or Add Person</title>
+    <title>Form</title>
 </head>
 <body>
-    <h2>Select an Existing Person</h2>
-    <form method="post" action="/submit">
+    <h2>Submit a Name and Email</h2>
 
-        <label for="person">Choose from list (optional):</label>
-        <select name="person" id="person">
-            <option value="">-- None --</option>
-            {% for name, email in people %}
-                <option value="{{ name }}|{{ email }}">{{ name }} ({{ email }})</option>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for msg in messages %}
+            <li>{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Name:</label><br>
+        <input type="text" name="name" list="name-list" required>
+        <datalist id="name-list">
+            {% for name in names %}
+                <option value="{{ name }}">
             {% endfor %}
-        </select><br><br>
+        </datalist>
+        <br><br>
 
-        <h3>OR Add a New Person</h3>
-        Name: <input type="text" name="new_name"><br><br>
-        Email: <input type="email" name="new_email"><br><br>
+        <label>Email:</label><br>
+        <input type="email" name="email" list="email-list" required>
+        <datalist id="email-list">
+            {% for email in emails %}
+                <option value="{{ email }}">
+            {% endfor %}
+        </datalist>
+        <br><br>
 
         <input type="submit" value="Submit">
     </form>
